@@ -1,0 +1,25 @@
+name: edge-ai-demo
+base: core26
+version: '0.1'
+summary: Edge AI inference service
+description: |
+  A lightweight HTTP inference service for Edge AI deployments on Ubuntu Core.
+
+grade: devel
+confinement: strict
+
+apps:
+  edge-ai-demo:
+    command: bin/edge-ai-demo
+    daemon: simple
+    restart-condition: always
+    plugs:
+      - network
+      - network-bind
+
+parts:
+  edge-ai-demo:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/1.22/stable
