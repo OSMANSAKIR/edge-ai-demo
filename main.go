@@ -1,16 +1,26 @@
 package main
 
-import (	
+import (
+      "bytes"
       "encoding/json"
+      "io"
       "log"
       "net/http"
+      "os"
 )
 
+var ollamaURL string
+
 func main() {
+      ollamaURL = os.Getenv("OLLAMA_URL")
+      if ollamaURL == "" {
+              ollamaURL = "http://localhost:11434"
+      }
+
       http.HandleFunc("/health", healthHandler)
       http.HandleFunc("/infer", inferHandler)
 
-      log.Println("CALISIYOR LAAAANNN :8080")
+      log.Println("edge-ai-demo starting on :8080")
       log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
@@ -40,10 +50,56 @@ func inferHandler(w http.ResponseWriter, r *http.Request) {
               return
       }
 
+      result, err := callOllama(input)
+      if err != nil {
+              http.Error(w, "ollama error: "+err.Error(), http.StatusInternalServerError)
+              return
+      }
+
       w.Header().Set("Content-Type", "application/json")
       json.NewEncoder(w).Encode(map[string]string{
               "input":  input,
-              "result": "inference placeholder: " + input,
-              "model":  "edge-ai-v1",
+              "result": result,
+              "model":  "tinyllama",
       })
 }
+
+func callOllama(prompt string) (string, error) {
+      body, _ := json.Marshal(map[string]interface{}{
+              "model":  "tinyllama",
+              "prompt": prompt,
+              "stream": false,
+      })
+
+      resp, err := http.Post(ollamaURL+"/api/generate", "application/json", bytes.NewBuffer(body))
+      if err != nil {
+              return "", err
+      }
+      defer resp.Body.Close()
+
+      data, _ := io.ReadAll(resp.Body)
+      var result map[string]interface{}
+      json.Unmarshal(data, &result)
+
+      return result["response"].(string), nil
+}
+
+Kaydet, commit et, push et:
+
+cd ~/projeler/edge-ai-demo
+git add main.go
+git commit -m "connect /infer to ollama"
+git push
+
+Sonra dev VM'de:
+
+cd ~/edge-ai-demo
+git pull
+docker stop edge-ai-demo
+docker rm edge-ai-demo
+docker build -t edge-ai-demo .
+docker run -d -p 8080:8080 --name edge-ai-demo \
+  -e OLLAMA_URL=http://192.168.252.4:11434 \
+  edge-ai-demo
+
+Çıktıları yapıştır.
