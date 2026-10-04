@@ -83,23 +83,3 @@ func callOllama(prompt string) (string, error) {
 
       return result["response"].(string), nil
 }
-
-Kaydet, commit et, push et:
-
-cd ~/projeler/edge-ai-demo
-git add main.go
-git commit -m "connect /infer to ollama"
-git push
-
-Sonra dev VM'de:
-
-cd ~/edge-ai-demo
-git pull
-docker stop edge-ai-demo
-docker rm edge-ai-demo
-docker build -t edge-ai-demo .
-docker run -d -p 8080:8080 --name edge-ai-demo \
-  -e OLLAMA_URL=http://192.168.252.4:11434 \
-  edge-ai-demo
-
-Çıktıları yapıştır.
